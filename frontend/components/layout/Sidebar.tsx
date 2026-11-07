@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Wand2, ListVideo, Film, Cpu, HardDrive, CheckCircle2 } from "lucide-react";
+import { Sparkles, Wand2, Image as ImageIcon, ListVideo, Film, Cpu, HardDrive, CheckCircle2 } from "lucide-react";
 import { GPUSystemInfo } from "../../types";
 
 interface SidebarProps {
@@ -19,8 +19,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: "enhance", label: "Enhance Video", icon: Wand2, badge: null },
+    { id: "enhance-image", label: "Enhance Image", icon: ImageIcon, badge: "NEW" },
     { id: "queue", label: "Processing Queue", icon: ListVideo, badge: activeJobCount > 0 ? activeJobCount : null },
-    { id: "library", label: "My Videos", icon: Film, badge: null },
+    { id: "library", label: "Library & History", icon: Film, badge: null },
     { id: "system", label: "System Status", icon: Cpu, badge: null },
   ];
 

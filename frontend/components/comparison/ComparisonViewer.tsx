@@ -50,6 +50,12 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
   const loupeOrigRef = useRef<HTMLVideoElement>(null);
   const loupeEnhRef = useRef<HTMLVideoElement>(null);
 
+  const isImage =
+    job.media_type === "image" ||
+    job.input_metadata?.media_type === "image" ||
+    Boolean(job.input_path && /\.(png|jpg|jpeg|webp|bmp)$/i.test(job.input_path)) ||
+    Boolean(job.output_path && /\.(png|jpg|jpeg|webp|bmp)$/i.test(job.output_path));
+
   const originalPath =
     job.video_url ||
     (job.input_path ? `/storage/uploads/${job.input_path.split(/[\\/]/).pop()}` : null);
@@ -410,39 +416,55 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                 loupeActive ? "cursor-none" : "cursor-ew-resize"
               }`}
             >
-              {/* Enhanced Video (Background Layer) */}
+              {/* Enhanced Media (Background Layer) */}
               {enhancedUrl ? (
-                <video
-                  ref={videoEnhancedRef}
-                  src={enhancedUrl}
-                  onTimeUpdate={handleTimeUpdate}
-                  muted={isMuted}
-                  playsInline
-                  loop
-                  preload="auto"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">
-                  Enhanced video stream not yet available
-                </div>
-              )}
-
-              {/* Original Video (Clipped Foreground Layer via clip-path) */}
-              {originalUrl && (
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
-                >
+                isImage ? (
+                  <img
+                    src={enhancedUrl}
+                    alt="AI Enhanced"
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                  />
+                ) : (
                   <video
-                    ref={videoOriginalRef}
-                    src={originalUrl}
-                    muted
+                    ref={videoEnhancedRef}
+                    src={enhancedUrl}
+                    onTimeUpdate={handleTimeUpdate}
+                    muted={isMuted}
                     playsInline
                     loop
                     preload="auto"
                     className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                   />
+                )
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">
+                  Enhanced stream not yet available
+                </div>
+              )}
+
+              {/* Original Media (Clipped Foreground Layer via clip-path) */}
+              {originalUrl && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                >
+                  {isImage ? (
+                    <img
+                      src={originalUrl}
+                      alt="Original"
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    />
+                  ) : (
+                    <video
+                      ref={videoOriginalRef}
+                      src={originalUrl}
+                      muted
+                      playsInline
+                      loop
+                      preload="auto"
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    />
+                  )}
                 </div>
               )}
 
@@ -482,15 +504,19 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                       transformOrigin: `${loupePos.clientX}px ${loupePos.clientY}px`
                     }}
                   >
-                    <video
-                      ref={loupeEnhRef}
-                      src={enhancedUrl || undefined}
-                      muted
-                      playsInline
-                      loop
-                      preload="auto"
-                      className="w-full h-full object-contain"
-                    />
+                    {isImage ? (
+                      <img src={enhancedUrl || undefined} alt="Loupe Enh" className="w-full h-full object-contain" />
+                    ) : (
+                      <video
+                        ref={loupeEnhRef}
+                        src={enhancedUrl || undefined}
+                        muted
+                        playsInline
+                        loop
+                        preload="auto"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
                   </div>
 
                   {/* Original side (Clipped left half) */}
@@ -506,15 +532,19 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                         transformOrigin: `${loupePos.clientX}px ${loupePos.clientY}px`
                       }}
                     >
-                      <video
-                        ref={loupeOrigRef}
-                        src={originalUrl || undefined}
-                        muted
-                        playsInline
-                        loop
-                        preload="auto"
-                        className="w-full h-full object-contain"
-                      />
+                      {isImage ? (
+                        <img src={originalUrl || undefined} alt="Loupe Orig" className="w-full h-full object-contain" />
+                      ) : (
+                        <video
+                          ref={loupeOrigRef}
+                          src={originalUrl || undefined}
+                          muted
+                          playsInline
+                          loop
+                          preload="auto"
+                          className="w-full h-full object-contain"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -546,22 +576,26 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
-                  <span>Original Footage</span>
-                  <span className="text-slate-400">{origMeta?.display_width}×{origMeta?.display_height} • {origMeta?.fps} FPS</span>
+                  <span>{isImage ? "Original Image" : "Original Footage"}</span>
+                  <span className="text-slate-400">{origMeta?.display_width}×{origMeta?.display_height}{!isImage && ` • ${origMeta?.fps} FPS`}</span>
                 </div>
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-200 flex items-center justify-center">
                   {originalUrl ? (
-                    <video
-                      ref={videoOriginalRef}
-                      src={originalUrl}
-                      muted
-                      playsInline
-                      loop
-                      preload="auto"
-                      className="w-full h-full object-contain"
-                    />
+                    isImage ? (
+                      <img src={originalUrl} alt="Original" className="w-full h-full object-contain" />
+                    ) : (
+                      <video
+                        ref={videoOriginalRef}
+                        src={originalUrl}
+                        muted
+                        playsInline
+                        loop
+                        preload="auto"
+                        className="w-full h-full object-contain"
+                      />
+                    )
                   ) : (
-                    <span className="text-slate-500 text-xs">Original video not available</span>
+                    <span className="text-slate-500 text-xs">Original media not available</span>
                   )}
                 </div>
               </div>
@@ -569,92 +603,121 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-violet-700 px-1">
                   <span>AI Super-Resolution ({colorGradeName})</span>
-                  <span className="text-violet-600 font-bold">{enhMeta?.display_width}×{enhMeta?.display_height} • {enhMeta?.fps || origMeta?.fps} FPS</span>
+                  <span className="text-violet-600 font-bold">{enhMeta?.display_width}×{enhMeta?.display_height}{!isImage && ` • ${enhMeta?.fps || origMeta?.fps} FPS`}</span>
                 </div>
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-violet-200 shadow-sm flex items-center justify-center">
                   {enhancedUrl ? (
-                    <video
-                      ref={videoEnhancedRef}
-                      src={enhancedUrl}
-                      onTimeUpdate={handleTimeUpdate}
-                      playsInline
-                      loop
-                      className="w-full h-full object-contain"
-                    />
+                    isImage ? (
+                      <img src={enhancedUrl} alt="AI Enhanced" className="w-full h-full object-contain" />
+                    ) : (
+                      <video
+                        ref={videoEnhancedRef}
+                        src={enhancedUrl}
+                        onTimeUpdate={handleTimeUpdate}
+                        playsInline
+                        loop
+                        className="w-full h-full object-contain"
+                      />
+                    )
                   ) : (
-                    <span className="text-slate-500 text-xs">Enhanced video not available</span>
+                    <span className="text-slate-500 text-xs">Enhanced media not available</span>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Synchronized Player Bar with Slow-Mo & Controls */}
+          {/* Synchronized Player Bar / Image Inspection Bar */}
           <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={togglePlay}
-                title="Play/Pause (Space)"
-                className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 active:scale-95 transition-all shadow-sm shadow-violet-500/20"
-              >
-                {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white ml-0.5" />}
-              </button>
-              <button
-                onClick={handleRestart}
-                title="Restart from beginning"
-                className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <button
-                onClick={toggleMute}
-                title="Mute / Unmute"
-                className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all"
-              >
-                {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4" />}
-              </button>
-            </div>
+            {!isImage ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={togglePlay}
+                    title="Play/Pause (Space)"
+                    className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 active:scale-95 transition-all shadow-sm shadow-violet-500/20"
+                  >
+                    {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white ml-0.5" />}
+                  </button>
+                  <button
+                    onClick={handleRestart}
+                    title="Restart from beginning"
+                    className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={toggleMute}
+                    title="Mute / Unmute"
+                    className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all"
+                  >
+                    {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                </div>
 
-            {/* Scrubber */}
-            <div className="flex-1 w-full flex items-center gap-3">
-              <input
-                type="range"
-                min={0}
-                max={duration || 10}
-                step={0.01}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full accent-violet-600 h-2 bg-slate-100 rounded-lg cursor-pointer"
-              />
-              <span className="text-xs font-medium text-slate-500 w-16 text-right tabular-nums">
-                {Math.round(currentTime)}s / {Math.round(duration)}s
-              </span>
-            </div>
+                {/* Scrubber */}
+                <div className="flex-1 w-full flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 10}
+                    step={0.01}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full accent-violet-600 h-2 bg-slate-100 rounded-lg cursor-pointer"
+                  />
+                  <span className="text-xs font-medium text-slate-500 w-16 text-right tabular-nums">
+                    {Math.round(currentTime)}s / {Math.round(duration)}s
+                  </span>
+                </div>
 
-            {/* Cinematic Speed & Slow-Mo Selectors */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-slate-400 mr-1 hidden md:inline">Speed:</span>
-              {[0.25, 0.5, 1.0, 1.5, 2.0].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => changeSpeed(s)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                    playbackSpeed === s
-                      ? "bg-violet-600 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {s === 0.25 ? "0.25× SloMo" : s === 0.5 ? "0.5×" : `${s}×`}
-                </button>
-              ))}
-              <button
-                onClick={toggleFullscreen}
-                title="Fullscreen"
-                className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all ml-1"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                {/* Cinematic Speed & Slow-Mo Selectors */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-slate-400 mr-1 hidden md:inline">Speed:</span>
+                  {[0.25, 0.5, 1.0, 1.5, 2.0].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => changeSpeed(s)}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                        playbackSpeed === s
+                          ? "bg-violet-600 text-white shadow-sm"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {s === 0.25 ? "0.25× SloMo" : s === 0.5 ? "0.5×" : `${s}×`}
+                    </button>
+                  ))}
+                  <button
+                    onClick={toggleFullscreen}
+                    title="Fullscreen"
+                    className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all ml-1"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-violet-100 text-violet-800 text-xs font-bold">
+                    🖼️ Image Inspection Mode
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Drag the center divider or press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[11px] font-mono">L</kbd> for 4× Loupe
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleFullscreen}
+                    title="Fullscreen"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-all"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Fullscreen</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

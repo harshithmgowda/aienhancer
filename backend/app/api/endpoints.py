@@ -122,7 +122,7 @@ async def get_models():
 
 @router.post("/videos/upload")
 async def upload_video(file: UploadFile = File(...)):
-    """Upload and validate video file."""
+    """Upload and validate video or image file."""
     # Check disk space
     disk = shutil.disk_usage(settings.STORAGE_DIR)
     if disk.free < settings.MIN_DISK_FREE_BYTES:
@@ -131,8 +131,9 @@ async def upload_video(file: UploadFile = File(...)):
     # Generate unique ID
     video_id = str(uuid.uuid4())
     ext = Path(file.filename).suffix.lower()
-    if ext not in [".mp4", ".mov", ".mkv", ".webm", ".avi"]:
-        raise HTTPException(status_code=400, detail=f"Unsupported format '{ext}'. Supported: MP4, MOV, MKV, WEBM.")
+    valid_exts = [".mp4", ".mov", ".mkv", ".webm", ".avi", ".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+    if ext not in valid_exts:
+        raise HTTPException(status_code=400, detail=f"Unsupported format '{ext}'. Supported: MP4, MOV, MKV, WEBM, JPG, PNG, WEBP.")
 
     safe_filename = f"{video_id}{ext}"
     dest_path = settings.UPLOAD_DIR / safe_filename
@@ -145,7 +146,7 @@ async def upload_video(file: UploadFile = File(...)):
                 bytes_written += len(chunk)
                 if bytes_written > settings.MAX_UPLOAD_SIZE_BYTES:
                     dest_path.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="File exceeds 2 GB limit.")
+                    raise HTTPException(status_code=413, detail="File exceeds upload limit.")
                 f.write(chunk)
     except Exception as e:
         if dest_path.exists():
@@ -157,7 +158,7 @@ async def upload_video(file: UploadFile = File(...)):
         metadata = VideoProbeService.probe(dest_path)
     except Exception as e:
         dest_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=400, detail=f"Invalid or corrupted video: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid or corrupted media: {e}")
 
     # Generate poster thumbnail
     thumb_path = settings.THUMBNAIL_DIR / f"{video_id}_thumb.jpg"
@@ -260,27 +261,30 @@ async def cancel_job(job_id: str):
 async def download_job(job_id: str):
     job = await JobManager.get_job(job_id)
     if not job or not job.output_path or not Path(job.output_path).exists():
-        raise HTTPException(status_code=404, detail="Enhanced video file not found or not completed.")
+        raise HTTPException(status_code=404, detail="Enhanced media file not found or not completed.")
     
     out_file = Path(job.output_path)
     download_filename = f"pixelforge_{job.original_filename}"
+    media_type = "image/png" if out_file.suffix.lower() == ".png" else "image/jpeg" if out_file.suffix.lower() in [".jpg", ".jpeg"] else "video/mp4"
     return FileResponse(
         path=out_file,
         filename=download_filename,
-        media_type="video/mp4"
+        media_type=media_type
     )
 
 @router.get("/jobs/{job_id}/download/original")
 async def download_original_job(job_id: str):
     job = await JobManager.get_job(job_id)
     if not job or not job.input_path or not Path(job.input_path).exists():
-        raise HTTPException(status_code=404, detail="Original source video not found.")
+        raise HTTPException(status_code=404, detail="Original source media not found.")
     
     in_file = Path(job.input_path)
+    ext = in_file.suffix.lower()
+    media_type = "image/png" if ext == ".png" else "image/jpeg" if ext in [".jpg", ".jpeg"] else "video/mp4"
     return FileResponse(
         path=in_file,
         filename=f"original_{job.original_filename}",
-        media_type="video/mp4"
+        media_type=media_type
     )
 
 @router.delete("/jobs/{job_id}")

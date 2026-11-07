@@ -13,6 +13,7 @@ export interface VideoMetadata {
   has_audio: boolean;
   file_size: number;
   bitrate: number;
+  media_type?: "video" | "image";
 }
 
 export interface UploadedVideo {
@@ -22,10 +23,13 @@ export interface UploadedVideo {
   video_url: string;
   thumbnail_url: string | null;
   metadata: VideoMetadata;
+  media_type?: "video" | "image";
 }
 
 export interface EnhancementSettings {
-  target_resolution: "1080p" | "1440p" | "2160p" | "custom";
+  media_type?: "video" | "image";
+  scale?: number;
+  target_resolution: "1080p" | "1440p" | "2160p" | "4320p" | "custom";
   custom_width?: number;
   custom_height?: number;
   model: string;
@@ -58,6 +62,7 @@ export interface JobRecord {
   eta_seconds: number | null;
   elapsed_seconds: number;
   error_message: string | null;
+  media_type?: "video" | "image";
   input_metadata: VideoMetadata | null;
   output_metadata: VideoMetadata | null;
   settings: EnhancementSettings | null;

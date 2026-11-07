@@ -32,18 +32,19 @@ class FFmpegService:
 
     @classmethod
     def generate_thumbnail(cls, video_path: Path, thumbnail_path: Path, time_offset: float = 1.0) -> bool:
-        """Generate a poster frame JPEG thumbnail from video."""
+        """Generate a poster frame JPEG thumbnail from video or image."""
         ffmpeg_bin = cls.get_ffmpeg_cmd()
-        cmd = [
-            ffmpeg_bin,
-            "-y",
-            "-ss", str(time_offset),
+        is_img = video_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+        cmd = [ffmpeg_bin, "-y"]
+        if not is_img:
+            cmd.extend(["-ss", str(time_offset)])
+        cmd.extend([
             "-i", str(video_path),
             "-vframes", "1",
             "-q:v", "2",
             "-vf", "scale=640:-1:flags=bicubic",
             str(thumbnail_path)
-        ]
+        ])
         try:
             res = subprocess.run(
                 cmd,
@@ -274,4 +275,70 @@ class FFmpegService:
                 )
                 return output_path.exists() and output_path.stat().st_size > 0
             return False
+
+    @classmethod
+    def finalize_image(
+        cls,
+        enhanced_image_path: Path,
+        output_path: Path,
+        target_width: Optional[int] = None,
+        target_height: Optional[int] = None,
+        color_grade: str = "none",
+        clarity_boost: bool = True,
+        hdr_tone: bool = False,
+        film_grain: str = "none",
+        vignette: bool = False
+    ) -> bool:
+        """
+        Applies final resizing, color grading presets, CAS clarity, and film texture to enhanced images.
+        """
+        ffmpeg_bin = cls.get_ffmpeg_cmd()
+        filter_chain = []
+        if target_width and target_height:
+            filter_chain.append(f"scale={target_width}:{target_height}:flags=lanczos")
+        if clarity_boost:
+            filter_chain.append("cas=0.35")
+        if color_grade == "cinematic_teal_orange":
+            filter_chain.append("colorbalance=rs=-0.04:gs=0.02:bs=0.08:rh=0.08:gh=0.03:bh=-0.06,eq=contrast=1.06:saturation=1.12")
+        elif color_grade == "cyberpunk_vivid":
+            filter_chain.append("eq=contrast=1.12:saturation=1.35:brightness=0.01,colorbalance=rs=-0.03:bs=0.06:rh=0.06:bh=0.04")
+        elif color_grade == "golden_hour":
+            filter_chain.append("colorbalance=rh=0.10:gh=0.05:bh=-0.08:rm=0.05:gm=0.02:bm=-0.04,eq=contrast=1.04:saturation=1.10:gamma=1.02")
+        elif color_grade == "anime_radiance":
+            filter_chain.append("eq=contrast=1.08:saturation=1.28:brightness=0.02:gamma=1.04")
+        elif color_grade == "film_noir":
+            filter_chain.append("hue=s=0,eq=contrast=1.25:brightness=-0.02:gamma=0.96")
+        if hdr_tone and color_grade not in ["film_noir", "cyberpunk_vivid"]:
+            filter_chain.append("eq=contrast=1.08:gamma=1.04:saturation=1.08:brightness=0.01")
+        if film_grain == "subtle":
+            filter_chain.append("noise=alls=6:allf=t+u")
+        elif film_grain == "medium":
+            filter_chain.append("noise=alls=12:allf=t+u")
+        if vignette:
+            filter_chain.append("vignette=PI/5")
+
+        vf_args = ["-vf", ",".join(filter_chain)] if filter_chain else []
+        cmd = [
+            ffmpeg_bin, "-y",
+            "-i", str(enhanced_image_path),
+            *vf_args,
+            str(output_path)
+        ]
+        try:
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
+            )
+            return output_path.exists() and output_path.stat().st_size > 0
+        except Exception as e:
+            logger.error(f"Image finalization error: {e}")
+            import shutil
+            try:
+                shutil.copy(enhanced_image_path, output_path)
+                return output_path.exists()
+            except Exception:
+                return False
 

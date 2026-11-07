@@ -8,17 +8,20 @@ class VideoMetadata(BaseModel):
     display_height: int
     rotation: int = 0
     aspect_ratio: str
-    fps: float
-    duration: float
-    total_frames: int
-    video_codec: str
+    fps: float = 0.0
+    duration: float = 0.0
+    total_frames: int = 1
+    video_codec: str = "image"
     audio_codec: Optional[str] = None
     has_audio: bool = False
     file_size: int
-    bitrate: int
+    bitrate: int = 0
+    media_type: str = "video"
 
 class EnhancementSettings(BaseModel):
-    target_resolution: str = Field(default="1080p", description="1080p, 1440p, 2160p (4K), or custom")
+    media_type: str = Field(default="video", description="video or image")
+    target_resolution: str = Field(default="1080p", description="1080p, 1440p, 2160p (4K), 4320p (8K), or custom")
+    scale: int = Field(default=4, description="2, 3, or 4")
     custom_width: Optional[int] = None
     custom_height: Optional[int] = None
     model: str = Field(default="realesrgan-plus", description="realesrgan-plus, realesrgan-plus-anime, etc.")
@@ -39,10 +42,12 @@ class CreateJobRequest(BaseModel):
     video_id: str
     settings: EnhancementSettings
     original_filename: Optional[str] = None
+    media_type: str = "video"
 
 class JobResponse(BaseModel):
     id: str
     original_filename: str
+    media_type: str = "video"
     status: str
     stage: str
     progress: float

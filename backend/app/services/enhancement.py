@@ -158,6 +158,100 @@ class EnhancementPipeline:
 
             logger.info(f"Enhancement plan: {in_w}x{in_h} -> {target_w}x{target_h} ({target_res}), Model: {model_opt}")
 
+            is_image = meta.get("media_type") == "image" or input_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+            if is_image:
+                await JobManager.update_job(self.job_id, status="PROCESSING")
+                await self._emit_progress("Enhancing image with Real-ESRGAN on RTX 5050 GPU", 25.0)
+
+                # Map image model
+                if "anime" in model_opt:
+                    realesrgan_model = "realesrgan-x4plus-anime"
+                else:
+                    realesrgan_model = "realesrgan-x4plus"
+
+                temp_ai_out = settings.TEMP_DIR / f"{self.job_id}_ai_raw.png"
+                final_out = settings.OUTPUT_DIR / f"{self.job_id}_enhanced.png"
+
+                realesrgan_bin = settings.BASE_DIR / "tools" / "realesrgan" / "realesrgan-ncnn-vulkan.exe"
+                models_dir = settings.BASE_DIR / "tools" / "realesrgan" / "models"
+
+                cmd = [
+                    str(realesrgan_bin),
+                    "-i", str(input_path),
+                    "-o", str(temp_ai_out),
+                    "-m", str(models_dir),
+                    "-n", realesrgan_model,
+                    "-s", "4",
+                    "-g", str(settings.GPU_TARGET_INDEX)
+                ]
+
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await proc.communicate()
+                if proc.returncode != 0 or not temp_ai_out.exists():
+                    err_msg = stderr.decode('utf-8', errors='ignore')
+                    logger.error(f"Real-ESRGAN image failed: {err_msg}")
+                    raise RuntimeError("Real-ESRGAN image neural enhancement failed.")
+
+                # Finalize image with visual enhancements & target scaling
+                await JobManager.update_job(self.job_id, status="ENCODING")
+                await self._emit_progress("Applying cinematic color grade, CAS clarity, and detail enhancements", 80.0)
+
+                ok = FFmpegService.finalize_image(
+                    enhanced_image_path=temp_ai_out,
+                    output_path=final_out,
+                    target_width=target_w,
+                    target_height=target_h,
+                    color_grade=color_grade,
+                    clarity_boost=clarity_boost,
+                    hdr_tone=hdr_tone,
+                    film_grain=film_grain,
+                    vignette=vignette
+                )
+                if not ok or not final_out.exists():
+                    raise RuntimeError("Image post-processing and formatting failed.")
+
+                # Output verification & thumbnail
+                out_meta = VideoProbeService.probe(final_out)
+                enhanced_thumb = settings.THUMBNAIL_DIR / f"{self.job_id}_enhanced_thumb.jpg"
+                FFmpegService.generate_thumbnail(final_out, enhanced_thumb)
+
+                if temp_ai_out.exists():
+                    temp_ai_out.unlink(missing_ok=True)
+
+                comp_iso = datetime.now(timezone.utc).isoformat()
+                tot_elapsed = time.time() - self.start_time
+
+                await JobManager.update_job(
+                    self.job_id,
+                    status="COMPLETED",
+                    stage="Completed",
+                    progress=100.0,
+                    output_path=str(final_out),
+                    completed_at=comp_iso,
+                    elapsed_seconds=tot_elapsed,
+                    output_metadata=json.dumps(out_meta)
+                )
+
+                finish_payload = {
+                    "type": "job_completed",
+                    "job_id": self.job_id,
+                    "status": "COMPLETED",
+                    "progress": 100.0,
+                    "stage": "Completed",
+                    "output_metadata": out_meta,
+                    "output_path": str(final_out),
+                    "video_url": f"/storage/uploads/{input_path.name}",
+                    "enhanced_video_url": f"/storage/outputs/{final_out.name}",
+                    "completed_at": comp_iso
+                }
+                await ws_manager.broadcast_job_update(self.job_id, finish_payload)
+                await ws_manager.broadcast_global(finish_payload)
+                return
+
             # Map model selection
             if model_opt == "auto":
                 model_name = "realesrgan-plus"

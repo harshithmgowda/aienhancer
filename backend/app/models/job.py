@@ -40,7 +40,10 @@ class JobRecord:
         if self.settings:
             try:
                 d["settings"] = json.loads(self.settings)
+                d["media_type"] = d["settings"].get("media_type", "video")
             except Exception:
-                pass
+                d["media_type"] = "video"
+        else:
+            d["media_type"] = "video"
         return d
 

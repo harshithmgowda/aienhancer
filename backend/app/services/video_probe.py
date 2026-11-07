@@ -116,6 +116,11 @@ class VideoProbeService:
             else:
                 aspect_ratio = f"{round(ratio, 2)}:1"
 
+        is_image = file_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+        if is_image:
+            total_frames = 1
+            duration = 0.0
+
         file_size = int(fmt.get("size") or file_path.stat().st_size)
         bitrate = int(fmt.get("bit_rate") or video_stream.get("bit_rate") or 0)
 
@@ -133,6 +138,7 @@ class VideoProbeService:
             "audio_codec": audio_stream.get("codec_name") if audio_stream else None,
             "has_audio": audio_stream is not None,
             "file_size": file_size,
-            "bitrate": bitrate
+            "bitrate": bitrate,
+            "media_type": "image" if is_image else "video"
         }
 

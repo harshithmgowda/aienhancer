@@ -51,8 +51,26 @@ export default function Home() {
     clarity_boost: true,
     hdr_tone: false,
     film_grain: "none",
-    vignette: false
+    vignette: false,
+    media_type: "video",
+    scale: 4
   });
+
+  useEffect(() => {
+    if (currentTab === "enhance-image") {
+      setSettings((prev) => ({
+        ...prev,
+        media_type: "image",
+        interpolate_fps: false,
+        target_resolution: prev.target_resolution === "1080p" ? "2160p" : prev.target_resolution
+      }));
+    } else if (currentTab === "enhance") {
+      setSettings((prev) => ({
+        ...prev,
+        media_type: "video"
+      }));
+    }
+  }, [currentTab]);
 
   const systemWsRef = useRef<WebSocket | null>(null);
   const jobWsRef = useRef<WebSocket | null>(null);
@@ -221,22 +239,26 @@ export default function Home() {
             comparisonJob
               ? "Before & After Comparison"
               : currentTab === "enhance"
-              ? "PIXELFORGE AI"
+              ? "PIXELFORGE AI Video"
+              : currentTab === "enhance-image"
+              ? "PIXELFORGE AI Image"
               : currentTab === "queue"
               ? "Active Processing Queue"
               : currentTab === "library"
-              ? "Video Library"
+              ? "Media Library & History"
               : "System Hardware & Engine Status"
           }
           subtitle={
             comparisonJob
-              ? "Interactive synchronized split viewer comparing original source vs enhanced 4K output"
+              ? "Interactive synchronized split viewer comparing original source vs enhanced output"
               : currentTab === "enhance"
-              ? "Transform ordinary footage into extraordinary clarity."
+              ? "Transform ordinary footage into extraordinary 4K clarity with local GPU inference."
+              : currentTab === "enhance-image"
+              ? "Upscale photos and artwork up to 8K resolution with Real-ESRGAN and Studio Pro grading."
               : currentTab === "queue"
               ? "Real-time GPU inference pipeline & progress monitoring"
               : currentTab === "library"
-              ? "Browse, compare, and download finished video enhancements"
+              ? "Browse, compare, and download finished video and image enhancements"
               : "NVIDIA RTX 5050 GPU, Vulkan device layers, and local engine configuration"
           }
           isBackendConnected={isBackendConnected}
@@ -249,8 +271,8 @@ export default function Home() {
               job={comparisonJob}
               onBack={() => setComparisonJob(null)}
             />
-          ) : currentTab === "enhance" ? (
-            /* ENHANCE VIDEO TAB */
+          ) : (currentTab === "enhance" || currentTab === "enhance-image") ? (
+            /* ENHANCE VIDEO OR IMAGE TAB */
             <div className="space-y-8">
               {/* Active Job Monitor if running */}
               {activeJob && (
@@ -267,10 +289,33 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Upload Zone or Video Metadata Card */}
+              {/* Upload Zone or Media Metadata Card */}
               {!uploadedVideo ? (
                 <VideoUploader
-                  onVideoUploaded={(v) => setUploadedVideo(v)}
+                  activeMediaType={currentTab === "enhance-image" ? "image" : "video"}
+                  onMediaTypeChange={(mode) => {
+                    if (mode === "image" && currentTab !== "enhance-image") {
+                      setCurrentTab("enhance-image");
+                    } else if (mode === "video" && currentTab !== "enhance") {
+                      setCurrentTab("enhance");
+                    }
+                  }}
+                  onVideoUploaded={(v) => {
+                    setUploadedVideo(v);
+                    if (v.metadata?.media_type === "image") {
+                      setSettings((prev) => ({
+                        ...prev,
+                        media_type: "image",
+                        interpolate_fps: false,
+                        target_resolution: prev.target_resolution === "1080p" ? "2160p" : prev.target_resolution
+                      }));
+                    } else {
+                      setSettings((prev) => ({
+                        ...prev,
+                        media_type: "video"
+                      }));
+                    }
+                  }}
                   isUploading={isUploading}
                   setIsUploading={setIsUploading}
                 />

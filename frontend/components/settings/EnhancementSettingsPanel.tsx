@@ -19,6 +19,7 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
   onStartEnhancement,
   disabled = false,
 }) => {
+  const isImage = inputMetadata.media_type === "image" || inputMetadata.duration === 0;
   const isPortrait = inputMetadata.display_height > inputMetadata.display_width;
 
   const resolutionOptions = [
@@ -26,13 +27,13 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
       id: "1080p",
       label: "1080p",
       sublabel: isPortrait ? "1080 × 1920" : "1920 × 1080",
-      desc: "Full HD — Ideal for web and social"
+      desc: "Full HD — Ideal for web & mobile"
     },
     {
       id: "1440p",
       label: "2K",
       sublabel: isPortrait ? "1440 × 2560" : "2560 × 1440",
-      desc: "Quad HD — Crisp display on monitors"
+      desc: "Quad HD — Crisp monitor display"
     },
     {
       id: "2160p",
@@ -40,6 +41,16 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
       sublabel: isPortrait ? "2160 × 3840" : "3840 × 2160",
       desc: "Ultra HD — Maximum clarity & detail"
     },
+    ...(isImage
+      ? [
+          {
+            id: "4320p",
+            label: "8K Ultra",
+            sublabel: isPortrait ? "4320 × 7680" : "7680 × 4320",
+            desc: "Ultra-high res for large prints"
+          }
+        ]
+      : []),
     {
       id: "custom",
       label: "Custom",
@@ -48,32 +59,59 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
     }
   ];
 
-  const modelOptions = [
-    {
-      id: "realesrgan-plus",
-      name: "Realistic Video",
-      badge: "Real-ESRGAN+ (4x)",
-      desc: "Deep super-resolution optimized for real-world live video and cinema."
-    },
-    {
-      id: "realesrgan-plus-anime",
-      name: "Anime / Animation",
-      badge: "Anime (4x)",
-      desc: "Sharp outlines and flat color restoration tailored for animated frames."
-    },
-    {
-      id: "realesr-animevideov3",
-      name: "Fast Video",
-      badge: "Fast v3 (2x-4x)",
-      desc: "Ultra-fast video neural network with low VRAM usage and temporal stability."
-    },
-    {
-      id: "auto",
-      name: "Auto Detect",
-      badge: "Recommended",
-      desc: "Selects the optimal model pipeline for your video format."
-    }
-  ];
+  const modelOptions = isImage
+    ? [
+        {
+          id: "realesrgan-plus",
+          name: "Photo Realism",
+          badge: "x4plus (4x)",
+          desc: "Deep super-resolution optimized for real-world photos, textures, and portraits."
+        },
+        {
+          id: "realesrgan-plus-anime",
+          name: "Digital Art / Anime",
+          badge: "Anime (4x)",
+          desc: "Sharp outlines and flat color restoration tailored for illustration and artwork."
+        },
+        {
+          id: "realesr-animevideov3",
+          name: "Fast Neural",
+          badge: "Fast v3",
+          desc: "Ultra-fast neural upscale with balanced sharpness and minimal artifacts."
+        },
+        {
+          id: "auto",
+          name: "Auto Detect",
+          badge: "Recommended",
+          desc: "Intelligently chooses the optimal neural model for your image."
+        }
+      ]
+    : [
+        {
+          id: "realesrgan-plus",
+          name: "Realistic Video",
+          badge: "Real-ESRGAN+ (4x)",
+          desc: "Deep super-resolution optimized for real-world live video and cinema."
+        },
+        {
+          id: "realesrgan-plus-anime",
+          name: "Anime / Animation",
+          badge: "Anime (4x)",
+          desc: "Sharp outlines and flat color restoration tailored for animated frames."
+        },
+        {
+          id: "realesr-animevideov3",
+          name: "Fast Video",
+          badge: "Fast v3 (2x-4x)",
+          desc: "Ultra-fast video neural network with low VRAM usage and temporal stability."
+        },
+        {
+          id: "auto",
+          name: "Auto Detect",
+          badge: "Recommended",
+          desc: "Selects the optimal model pipeline for your video format."
+        }
+      ];
 
   const presetOptions = [
     { id: "fast", label: "Fast", desc: "Lower GPU load" },
@@ -436,34 +474,36 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
         </div>
       </div>
 
-      {/* RIFE Frame Interpolation & Audio Preservation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Zap className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900">
-              RIFE AI Frame Interpolation (2× FPS)
+      {/* RIFE Frame Interpolation (Video Only) */}
+      {!isImage && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Zap className="w-4 h-4" />
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Doubles the video smoothness from {inputMetadata.fps} FPS to {inputMetadata.fps * 2} FPS using optical flow neural estimation.
+            <div>
+              <div className="text-xs font-bold text-slate-900">
+                RIFE AI Frame Interpolation (2× FPS)
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                Doubles the video smoothness from {inputMetadata.fps} FPS to {inputMetadata.fps * 2} FPS using optical flow neural estimation.
+              </div>
             </div>
           </div>
-        </div>
 
-        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-          <input
-            type="checkbox"
-            checked={settings.interpolate_fps}
-            onChange={(e) =>
-              onChangeSettings({ ...settings, interpolate_fps: e.target.checked })
-            }
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-        </label>
-      </div>
+          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={settings.interpolate_fps}
+              onChange={(e) =>
+                onChangeSettings({ ...settings, interpolate_fps: e.target.checked })
+              }
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+          </label>
+        </div>
+      )}
 
       {/* Action Button */}
       <div className="pt-2">
@@ -473,7 +513,7 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white font-bold text-base shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.005] active:scale-[0.995] transition-all duration-150 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="w-5 h-5 text-indigo-200" />
-          <span>Enhance Video on RTX 5050 GPU</span>
+          <span>{isImage ? "Enhance Image on RTX 5050 GPU" : "Enhance Video on RTX 5050 GPU"}</span>
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Film, Clock, Monitor, Volume2, VolumeX, FileText, ArrowRight, RefreshCw } from "lucide-react";
+import { Film, Image as ImageIcon, Clock, Monitor, Volume2, VolumeX, FileText, ArrowRight, RefreshCw, Palette } from "lucide-react";
 import { UploadedVideo } from "../../types";
 import { formatBytes, formatDuration } from "../../lib/utils";
 import { getFullMediaUrl } from "../../lib/api";
@@ -15,6 +15,7 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
   const meta = video.metadata;
   const thumbUrl = getFullMediaUrl(video.thumbnail_url);
   const isPortrait = meta.display_height > meta.display_width;
+  const isImage = meta.media_type === "image" || meta.duration === 0;
 
   return (
     <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm shadow-slate-100">
@@ -27,12 +28,16 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
               alt={video.original_filename}
               className="w-full h-full object-cover"
             />
+          ) : isImage ? (
+            <ImageIcon className="w-10 h-10 text-slate-500" />
           ) : (
             <Film className="w-10 h-10 text-slate-500" />
           )}
-          <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[11px] font-semibold text-white tracking-wide">
-            {formatDuration(meta.duration)}
-          </span>
+          {meta.duration > 0 && (
+            <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[11px] font-semibold text-white tracking-wide">
+              {formatDuration(meta.duration)}
+            </span>
+          )}
           <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-violet-600/90 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider">
             {meta.video_codec.toUpperCase()}
           </span>
@@ -47,7 +52,7 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
                   {video.original_filename}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Stream verified by FFprobe
+                  Stream verified by FFprobe {isImage ? "· Static Image" : "· Motion Video"}
                 </p>
               </div>
 
@@ -56,7 +61,7 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Change Video
+                Change {isImage ? "Image" : "Video"}
               </button>
             </div>
 
@@ -74,20 +79,29 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
               </div>
 
               <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
-                <span className="text-[11px] text-slate-400 block font-medium">Frame Rate</span>
+                <span className="text-[11px] text-slate-400 block font-medium">
+                  {isImage ? "Frame Count" : "Frame Rate"}
+                </span>
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                  <Clock className="w-3 h-3 text-indigo-500" />
-                  {meta.fps} FPS
+                  {isImage ? <ImageIcon className="w-3 h-3 text-indigo-500" /> : <Clock className="w-3 h-3 text-indigo-500" />}
+                  {isImage ? "1 Still Frame" : `${meta.fps} FPS`}
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  {meta.total_frames} total frames
+                  {isImage ? "Single high-res image" : `${meta.total_frames} total frames`}
                 </span>
               </div>
 
               <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
-                <span className="text-[11px] text-slate-400 block font-medium">Audio Track</span>
+                <span className="text-[11px] text-slate-400 block font-medium">
+                  {isImage ? "Color Profile" : "Audio Track"}
+                </span>
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                  {meta.has_audio ? (
+                  {isImage ? (
+                    <>
+                      <Palette className="w-3 h-3 text-emerald-500" />
+                      sRGB / 24-bit
+                    </>
+                  ) : meta.has_audio ? (
                     <>
                       <Volume2 className="w-3 h-3 text-emerald-500" />
                       {meta.audio_codec?.toUpperCase() || "AAC"}
@@ -100,7 +114,7 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
                   )}
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  {meta.has_audio ? "Preserved in output" : "Silent source"}
+                  {isImage ? "Direct Vulkan upscale" : meta.has_audio ? "Preserved in output" : "Silent source"}
                 </span>
               </div>
 
@@ -111,7 +125,7 @@ export const VideoMetadataCard: React.FC<VideoMetadataCardProps> = ({ video, onR
                   {formatBytes(meta.file_size)}
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  {Math.round(meta.bitrate / 1000)} kbps
+                  {isImage ? meta.video_codec.toUpperCase() : `${Math.round(meta.bitrate / 1000)} kbps`}
                 </span>
               </div>
             </div>

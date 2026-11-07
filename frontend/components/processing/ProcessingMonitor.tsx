@@ -22,6 +22,7 @@ export const ProcessingMonitor: React.FC<ProcessingMonitorProps> = ({
   const isFailed = job.status === "FAILED";
   const isCancelled = job.status === "CANCELLED";
   const isProcessing = ["INITIALIZING", "PROCESSING", "ENCODING", "QUEUED"].includes(job.status);
+  const isImage = job.settings?.media_type === "image" || job.input_metadata?.media_type === "image";
 
   return (
     <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-sm shadow-slate-100 space-y-7">
@@ -65,7 +66,7 @@ export const ProcessingMonitor: React.FC<ProcessingMonitorProps> = ({
               onClick={onViewComparison}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all"
             >
-              <span>View & Compare 4K Result</span>
+              <span>{isImage ? "View & Compare Enhanced Image" : "View & Compare 4K Result"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           )}
@@ -83,9 +84,11 @@ export const ProcessingMonitor: React.FC<ProcessingMonitorProps> = ({
               : `${job.progress}% Processed`}
           </span>
           <span className="text-[11px] text-slate-500 font-medium">
-            {job.current_frame > 0 && job.total_frames > 0 && (
+            {isImage ? (
+              <span>GPU AI Image Upscale</span>
+            ) : job.current_frame > 0 && job.total_frames > 0 ? (
               <>Frame {job.current_frame} of {job.total_frames}</>
-            )}
+            ) : null}
           </span>
         </div>
 
