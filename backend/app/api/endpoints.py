@@ -204,7 +204,7 @@ async def create_job(request: CreateJobRequest):
     job_id = str(uuid.uuid4())
     job = JobRecord(
         id=job_id,
-        original_filename=input_path.name,
+        original_filename=request.original_filename or input_path.name,
         input_path=str(input_path),
         thumbnail_path=str(thumb_path) if thumb_path.exists() else None,
         status="QUEUED",
@@ -267,6 +267,19 @@ async def download_job(job_id: str):
     return FileResponse(
         path=out_file,
         filename=download_filename,
+        media_type="video/mp4"
+    )
+
+@router.get("/jobs/{job_id}/download/original")
+async def download_original_job(job_id: str):
+    job = await JobManager.get_job(job_id)
+    if not job or not job.input_path or not Path(job.input_path).exists():
+        raise HTTPException(status_code=404, detail="Original source video not found.")
+    
+    in_file = Path(job.input_path)
+    return FileResponse(
+        path=in_file,
+        filename=f"original_{job.original_filename}",
         media_type="video/mp4"
     )
 

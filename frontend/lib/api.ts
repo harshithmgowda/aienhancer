@@ -60,11 +60,19 @@ export async function uploadVideo(
   });
 }
 
-export async function createJob(videoId: string, settings: EnhancementSettings): Promise<JobRecord> {
+export async function createJob(
+  videoId: string,
+  settings: EnhancementSettings,
+  originalFilename?: string
+): Promise<JobRecord> {
   const res = await fetch(`${API_BASE}/api/jobs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video_id: videoId, settings })
+    body: JSON.stringify({
+      video_id: videoId,
+      settings,
+      original_filename: originalFilename
+    })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Failed to create job" }));
@@ -99,6 +107,10 @@ export async function deleteJob(jobId: string) {
 
 export function getDownloadUrl(jobId: string): string {
   return `${API_BASE}/api/jobs/${jobId}/download`;
+}
+
+export function getOriginalDownloadUrl(jobId: string): string {
+  return `${API_BASE}/api/jobs/${jobId}/download/original`;
 }
 
 export function getFullMediaUrl(pathOrUrl?: string | null): string | null {

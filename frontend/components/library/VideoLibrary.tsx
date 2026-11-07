@@ -3,7 +3,7 @@
 import React from "react";
 import { Film, Download, Trash2, Eye, Clock, CheckCircle2, XCircle, ArrowRight, Sparkles } from "lucide-react";
 import { JobRecord } from "../../types";
-import { getDownloadUrl, getFullMediaUrl } from "../../lib/api";
+import { getDownloadUrl, getOriginalDownloadUrl, getFullMediaUrl } from "../../lib/api";
 import { formatBytes, formatDuration } from "../../lib/utils";
 
 interface VideoLibraryProps {
@@ -118,32 +118,45 @@ export const VideoLibrary: React.FC<VideoLibraryProps> = ({
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
+              <div className="p-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {isCompleted && (
-                    <>
-                      <button
-                        onClick={() => onSelectJob(job)}
-                        className="p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-violet-700 hover:border-violet-300 transition-colors"
-                        title="Compare Before & After"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <a
-                        href={getDownloadUrl(job.id)}
-                        download
-                        className="p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-emerald-700 hover:border-emerald-300 transition-colors"
-                        title="Download Enhanced Video"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                    </>
+                    <button
+                      onClick={() => onSelectJob(job)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors"
+                      title="Compare Before & After"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Compare</span>
+                    </button>
+                  )}
+                  {isCompleted && (
+                    <a
+                      href={getDownloadUrl(job.id)}
+                      download
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-emerald-700 hover:border-emerald-300 text-xs font-semibold transition-colors"
+                      title="Download Enhanced 4K Video"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>4K</span>
+                    </a>
+                  )}
+                  {job.input_path && (
+                    <a
+                      href={getOriginalDownloadUrl(job.id)}
+                      download
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-300 text-xs font-semibold transition-colors"
+                      title="Download Original Source Video"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Original</span>
+                    </a>
                   )}
                 </div>
 
                 <button
                   onClick={() => onDeleteJob(job.id)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                   title="Delete Video"
                 >
                   <Trash2 className="w-4 h-4" />

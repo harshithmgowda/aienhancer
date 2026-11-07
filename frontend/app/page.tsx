@@ -166,7 +166,7 @@ export default function Home() {
   const handleStartEnhancement = async () => {
     if (!uploadedVideo) return;
     try {
-      const newJob = await createJob(uploadedVideo.video_id, settings);
+      const newJob = await createJob(uploadedVideo.video_id, settings, uploadedVideo.original_filename);
       setActiveJob(newJob);
       loadInitialData();
     } catch (err: any) {

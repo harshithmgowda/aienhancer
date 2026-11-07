@@ -38,6 +38,7 @@ class EnhancementSettings(BaseModel):
 class CreateJobRequest(BaseModel):
     video_id: str
     settings: EnhancementSettings
+    original_filename: Optional[str] = None
 
 class JobResponse(BaseModel):
     id: str

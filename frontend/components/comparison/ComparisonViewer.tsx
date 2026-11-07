@@ -19,7 +19,7 @@ import {
   Palette
 } from "lucide-react";
 import { JobRecord } from "../../types";
-import { getDownloadUrl, getFullMediaUrl } from "../../lib/api";
+import { getDownloadUrl, getOriginalDownloadUrl, getFullMediaUrl } from "../../lib/api";
 import confetti from "canvas-confetti";
 
 interface ComparisonViewerProps {
@@ -97,8 +97,13 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
       loupeEnhRef.current?.pause();
       setIsPlaying(false);
     } else {
-      videoOriginalRef.current?.play().catch(() => {});
-      videoEnhancedRef.current?.play().catch(() => {});
+      if (videoOriginalRef.current) {
+        videoOriginalRef.current.muted = true;
+        videoOriginalRef.current.play().catch((err) => console.warn("Original video play blocked:", err));
+      }
+      if (videoEnhancedRef.current) {
+        videoEnhancedRef.current.play().catch((err) => console.warn("Enhanced video play blocked:", err));
+      }
       loupeOrigRef.current?.play().catch(() => {});
       loupeEnhRef.current?.play().catch(() => {});
       setIsPlaying(true);
@@ -127,6 +132,10 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
       setCurrentTime(cur);
       if (!duration && videoEnhancedRef.current.duration) {
         setDuration(videoEnhancedRef.current.duration);
+      }
+      // Keep original video tightly synchronized
+      if (videoOriginalRef.current && Math.abs(videoOriginalRef.current.currentTime - cur) > 0.15) {
+        videoOriginalRef.current.currentTime = cur;
       }
       // Sync loupe video currentTime if drifting
       if (loupeEnhRef.current && Math.abs(loupeEnhRef.current.currentTime - cur) > 0.1) {
@@ -350,15 +359,29 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
             </button>
           </div>
 
-          {/* Download Button */}
-          <a
-            href={getDownloadUrl(job.id)}
-            download
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download Video</span>
-          </a>
+          {/* Download Buttons */}
+          <div className="flex items-center gap-1.5">
+            <a
+              href={getDownloadUrl(job.id)}
+              download
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              title="Download Enhanced 4K Video"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download 4K</span>
+            </a>
+            {job.input_path && (
+              <a
+                href={getOriginalDownloadUrl(job.id)}
+                download
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-all"
+                title="Download Original Source Video"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <span>Original</span>
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
@@ -393,8 +416,10 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                   ref={videoEnhancedRef}
                   src={enhancedUrl}
                   onTimeUpdate={handleTimeUpdate}
+                  muted={isMuted}
                   playsInline
                   loop
+                  preload="auto"
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                 />
               ) : (
@@ -403,22 +428,20 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                 </div>
               )}
 
-              {/* Original Video (Clipped Foreground Layer) */}
+              {/* Original Video (Clipped Foreground Layer via clip-path) */}
               {originalUrl && (
                 <div
-                  className="absolute inset-0 overflow-hidden pointer-events-none"
-                  style={{ width: `${sliderPos}%` }}
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
                 >
                   <video
                     ref={videoOriginalRef}
                     src={originalUrl}
+                    muted
                     playsInline
                     loop
-                    className="absolute inset-0 w-full h-full object-contain max-w-none"
-                    style={{
-                      width: containerSize.width || "100%",
-                      height: containerSize.height || "100%"
-                    }}
+                    preload="auto"
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                   />
                 </div>
               )}
@@ -465,6 +488,7 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                       muted
                       playsInline
                       loop
+                      preload="auto"
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -488,6 +512,7 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                         muted
                         playsInline
                         loop
+                        preload="auto"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -529,8 +554,10 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({ job, onBack 
                     <video
                       ref={videoOriginalRef}
                       src={originalUrl}
+                      muted
                       playsInline
                       loop
+                      preload="auto"
                       className="w-full h-full object-contain"
                     />
                   ) : (
