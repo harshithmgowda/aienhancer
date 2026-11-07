@@ -1,0 +1,39 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+backend/venv/
+.pytest_cache/
+*.egg-info/
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+.next/
+
+# Storage & User Media (Never commit user files)
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/outputs/*
+!storage/outputs/.gitkeep
+storage/thumbnails/*
+!storage/thumbnails/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+storage/*.db
+storage/*.db-journal
+
+# AI Weights & Binaries
+tools/*
+!tools/.gitkeep
+
+# Environment & Secrets
+.env
+.env.local
+*.log
+
