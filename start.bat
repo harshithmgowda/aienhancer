@@ -10,52 +10,54 @@ echo.
 
 cd /d "%~dp0"
 
-:: 1. Check Python Virtual Environment
-echo [1/3] Checking Python backend environment...
-if not exist "backend\venv\Scripts\python.exe" (
-    echo [WARNING] Python virtual environment not found in backend\venv.
-    echo Running automated setup first...
-    powershell -ExecutionPolicy Bypass -File "scripts\setup.ps1"
-    if %errorlevel% neq 0 (
-        echo [ERROR] Setup failed. Please check the logs above.
-        pause
-        exit /b 1
-    )
-) else (
-    echo       [OK] Python venv verified.
-)
+:: 1. Clean previous lingering instances
+echo [1/4] Checking ports and cleaning up old instances...
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3000, 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
-:: 2. Check Node.js
-echo [2/3] Checking Node.js frontend environment...
-where node >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is not installed or not found in system PATH.
-    echo Please install Node.js from https://nodejs.org
+:: 2. Check Python Environment
+echo [2/4] Verifying Python backend...
+if not exist "backend\venv\Scripts\python.exe" (
+    echo [ERROR] Python environment not found in backend\venv!
     pause
     exit /b 1
-) else (
-    echo       [OK] Node.js verified.
 )
 
-:: 3. Launch Backend and Frontend Services
-echo [3/3] Starting PIXELFORGE AI Services...
+:: 3. Check Node.js
+echo [3/4] Verifying Node.js frontend...
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not installed or not in PATH!
+    pause
+    exit /b 1
+)
+
+:: 4. Start Servers
+echo [4/4] Starting services in background terminals...
+start "PIXELFORGE Backend" "%~dp0scripts\run_backend.bat"
+start "PIXELFORGE Frontend" "%~dp0scripts\run_frontend.bat"
+
 echo.
+echo Waiting for servers to initialize...
+set /a retries=0
+:wait_loop
+set /a retries+=1
+if !retries! gtr 30 (
+    echo.
+    echo [WARNING] Frontend took longer than expected to respond.
+    echo Check the PIXELFORGE Frontend terminal window for messages.
+    goto open_browser
+)
+ping 127.0.0.1 -n 2 >nul
+curl.exe -s -o nul http://localhost:3000
+if %errorlevel% neq 0 (
+    echo   ... waiting for frontend (Next.js Turbopack compiling) ...
+    goto wait_loop
+)
 
-echo Launching FastAPI Backend on http://127.0.0.1:8000 ...
-start "PIXELFORGE AI -- Backend Server" cmd /k ""%~dp0scripts\run_backend.bat""
-
-echo Waiting for backend initialization...
-ping 127.0.0.1 -n 3 >nul
-
-echo Launching Next.js Frontend on http://localhost:3000 ...
-start "PIXELFORGE AI -- Frontend App" cmd /k ""%~dp0scripts\run_frontend.bat""
-
-echo Waiting for frontend initialization...
-ping 127.0.0.1 -n 4 >nul
-
+:open_browser
 echo.
 echo ========================================================
-echo   PIXELFORGE AI IS RUNNING!
+echo   PIXELFORGE AI IS LIVE AND READY!
 echo   ------------------------------------------------------
 echo   Web Application: http://localhost:3000
 echo   Backend API:     http://127.0.0.1:8000
@@ -66,8 +68,8 @@ echo Opening browser to http://localhost:3000 ...
 start http://localhost:3000
 
 echo.
-echo Both services are running in separate terminal windows.
+echo Servers are running in separate terminal windows.
 echo Keep those windows open while using the application.
+echo You may close this launcher window at any time.
 echo.
-echo Press any key to close this launcher window...
-pause >nul
+pause

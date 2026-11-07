@@ -1,8 +1,8 @@
 @echo off
-title PIXELFORGE AI ? Next.js Frontend
+title PIXELFORGE AI -- Next.js Frontend
 cd /d "%~dp0..\frontend"
 echo ========================================================
-echo   PIXELFORGE AI ? Next.js Web Application
+echo   PIXELFORGE AI -- Next.js Web Application
 echo   URL: http://localhost:3000
 echo ========================================================
 echo.

@@ -1,8 +1,8 @@
 @echo off
-title PIXELFORGE AI ? Backend API Server
+title PIXELFORGE AI -- Backend API Server
 cd /d "%~dp0.."
 echo ========================================================
-echo   PIXELFORGE AI ? FastAPI Backend Server
+echo   PIXELFORGE AI -- FastAPI Backend Server
 echo   Host: http://127.0.0.1:8000
 echo   Docs: http://127.0.0.1:8000/docs
 echo ========================================================
