@@ -28,6 +28,13 @@ class EnhancementSettings(BaseModel):
     interpolate_fps: bool = False
     target_fps_multiplier: int = 1
 
+    # Cinematic & Visual Magic
+    color_grade: str = Field(default="none", description="none, cinematic_teal_orange, cyberpunk_vivid, golden_hour, anime_radiance, film_noir")
+    clarity_boost: bool = Field(default=True, description="Adaptive edge clarity and micro-contrast enhancement (CAS)")
+    hdr_tone: bool = Field(default=False, description="HDR-like dynamic range and contrast pop")
+    film_grain: str = Field(default="none", description="none, subtle, medium")
+    vignette: bool = Field(default=False, description="Subtle cinematic optical vignette")
+
 class CreateJobRequest(BaseModel):
     video_id: str
     settings: EnhancementSettings

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Zap, Layers, Sliders, Cpu, Check, HelpCircle } from "lucide-react";
+import { Sparkles, Zap, Layers, Sliders, Cpu, Check, HelpCircle, Palette, Film, SunMedium, Eye, Aperture } from "lucide-react";
 import { EnhancementSettings, VideoMetadata } from "../../types";
 
 interface EnhancementSettingsPanelProps {
@@ -79,6 +79,51 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
     { id: "fast", label: "Fast", desc: "Lower GPU load" },
     { id: "balanced", label: "Balanced", desc: "Optimal balance" },
     { id: "max", label: "Max Quality", desc: "Preserve fine detail" }
+  ];
+
+  const colorGradeOptions = [
+    {
+      id: "none",
+      name: "Natural AI",
+      badge: "Pure Detail",
+      desc: "Untouched neural upscale with true-to-source natural colors.",
+      swatch: "bg-slate-300"
+    },
+    {
+      id: "cinematic_teal_orange",
+      name: "Teal & Orange",
+      badge: "Blockbuster",
+      desc: "Warm golden skin tones with cool teal shadows.",
+      swatch: "bg-gradient-to-r from-teal-500 to-amber-500"
+    },
+    {
+      id: "cyberpunk_vivid",
+      name: "Cyberpunk Vivid",
+      badge: "Neon Pop",
+      desc: "Rich saturated blues, neon purples, and deep blacks.",
+      swatch: "bg-gradient-to-r from-fuchsia-500 via-purple-600 to-cyan-400"
+    },
+    {
+      id: "golden_hour",
+      name: "Golden Hour",
+      badge: "Sunlit Glow",
+      desc: "Sunset dusk radiance with soft golden highlights.",
+      swatch: "bg-gradient-to-r from-amber-400 to-orange-500"
+    },
+    {
+      id: "anime_radiance",
+      name: "Anime Radiance",
+      badge: "Ghibli Tone",
+      desc: "Vivid skies, emerald greens, and luminous clarity.",
+      swatch: "bg-gradient-to-r from-sky-400 via-emerald-400 to-rose-400"
+    },
+    {
+      id: "film_noir",
+      name: "35mm Film Noir",
+      badge: "Silver Halide",
+      desc: "High-contrast monochrome with silver tonal gradation.",
+      swatch: "bg-gradient-to-r from-neutral-900 via-neutral-500 to-neutral-200"
+    }
   ];
 
   return (
@@ -258,6 +303,135 @@ export const EnhancementSettingsPanel: React.FC<EnhancementSettingsPanelProps> =
               <div>H.265 / HEVC</div>
               <div className="text-[10px] text-slate-400 font-normal mt-0.5">Smaller file size</div>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Cinematic Visual Magic & Color Science */}
+      <div className="space-y-4 pt-2 border-t border-slate-100">
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Palette className="w-4 h-4 text-violet-600" />
+            <span>Cinematic Color Science & Visual Enhancements</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">Studio Pro</span>
+          </h4>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Infuse cinematic color grading, contrast-adaptive micro-sharpening, and filmic organic texture into the output video.
+          </p>
+        </div>
+
+        {/* Color Grade Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {colorGradeOptions.map((cg) => {
+            const isSelected = (settings.color_grade || "none") === cg.id;
+            return (
+              <button
+                key={cg.id}
+                type="button"
+                onClick={() => onChangeSettings({ ...settings, color_grade: cg.id as any })}
+                className={`p-3 rounded-2xl border text-left transition-all ${
+                  isSelected
+                    ? "border-violet-600 bg-violet-50/70 shadow-sm shadow-violet-100 ring-1 ring-violet-600"
+                    : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
+                }`}
+              >
+                <div className={`w-full h-4 rounded-lg mb-2 shadow-inner ${cg.swatch}`} />
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className={`font-bold text-xs truncate ${isSelected ? "text-violet-900" : "text-slate-900"}`}>
+                    {cg.name}
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                  {cg.desc}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Visual FX Toggles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          {/* CAS Clarity */}
+          <div
+            onClick={() => onChangeSettings({ ...settings, clarity_boost: settings.clarity_boost === false ? true : false })}
+            className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+              settings.clarity_boost !== false
+                ? "border-violet-300 bg-violet-50/40"
+                : "border-slate-200 bg-slate-50/30"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-violet-600" />
+              <div>
+                <div className="text-xs font-bold text-slate-800">CAS Micro-Clarity</div>
+                <div className="text-[10px] text-slate-400">Adaptive edge sharpness</div>
+              </div>
+            </div>
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${settings.clarity_boost !== false ? "bg-violet-600 border-violet-600 text-white" : "border-slate-300 bg-white"}`}>
+              {settings.clarity_boost !== false && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+            </div>
+          </div>
+
+          {/* HDR Tone */}
+          <div
+            onClick={() => onChangeSettings({ ...settings, hdr_tone: !settings.hdr_tone })}
+            className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+              settings.hdr_tone
+                ? "border-violet-300 bg-violet-50/40"
+                : "border-slate-200 bg-slate-50/30"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <SunMedium className="w-4 h-4 text-amber-500" />
+              <div>
+                <div className="text-xs font-bold text-slate-800">HDR Dynamic Pop</div>
+                <div className="text-[10px] text-slate-400">Expanded dynamic range</div>
+              </div>
+            </div>
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${settings.hdr_tone ? "bg-violet-600 border-violet-600 text-white" : "border-slate-300 bg-white"}`}>
+              {settings.hdr_tone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+            </div>
+          </div>
+
+          {/* Organic Film Grain */}
+          <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-slate-600" />
+              <div>
+                <div className="text-xs font-bold text-slate-800">Film Grain</div>
+                <div className="text-[10px] text-slate-400">35mm organic texture</div>
+              </div>
+            </div>
+            <select
+              value={settings.film_grain || "none"}
+              onChange={(e) => onChangeSettings({ ...settings, film_grain: e.target.value as any })}
+              className="px-2 py-1 rounded-lg border border-slate-200 text-xs font-semibold bg-white text-slate-700"
+            >
+              <option value="none">None</option>
+              <option value="subtle">Subtle</option>
+              <option value="medium">Medium</option>
+            </select>
+          </div>
+
+          {/* Cinema Vignette */}
+          <div
+            onClick={() => onChangeSettings({ ...settings, vignette: !settings.vignette })}
+            className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+              settings.vignette
+                ? "border-violet-300 bg-violet-50/40"
+                : "border-slate-200 bg-slate-50/30"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Aperture className="w-4 h-4 text-indigo-600" />
+              <div>
+                <div className="text-xs font-bold text-slate-800">Cinema Vignette</div>
+                <div className="text-[10px] text-slate-400">Anamorphic lens falloff</div>
+              </div>
+            </div>
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${settings.vignette ? "bg-violet-600 border-violet-600 text-white" : "border-slate-300 bg-white"}`}>
+              {settings.vignette && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+            </div>
           </div>
         </div>
       </div>

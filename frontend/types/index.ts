@@ -34,6 +34,13 @@ export interface EnhancementSettings {
   preserve_audio: boolean;
   interpolate_fps: boolean;
   target_fps_multiplier: number;
+
+  // Cinematic & Visual Magic
+  color_grade?: "none" | "cinematic_teal_orange" | "cyberpunk_vivid" | "golden_hour" | "anime_radiance" | "film_noir";
+  clarity_boost?: boolean;
+  hdr_tone?: boolean;
+  film_grain?: "none" | "subtle" | "medium";
+  vignette?: boolean;
 }
 
 export interface JobRecord {

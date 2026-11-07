@@ -46,7 +46,12 @@ export default function Home() {
     codec: "h264",
     preserve_audio: true,
     interpolate_fps: false,
-    target_fps_multiplier: 1
+    target_fps_multiplier: 1,
+    color_grade: "none",
+    clarity_boost: true,
+    hdr_tone: false,
+    film_grain: "none",
+    vignette: false
   });
 
   const systemWsRef = useRef<WebSocket | null>(null);

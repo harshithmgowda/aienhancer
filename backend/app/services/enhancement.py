@@ -138,6 +138,11 @@ class EnhancementPipeline:
             model_opt = user_settings.get("model", "realesrgan-plus")
             preset = user_settings.get("quality_preset", "balanced")
             codec = user_settings.get("codec", "h264")
+            color_grade = user_settings.get("color_grade", "none")
+            clarity_boost = user_settings.get("clarity_boost", True)
+            hdr_tone = user_settings.get("hdr_tone", False)
+            film_grain = user_settings.get("film_grain", "none")
+            vignette = user_settings.get("vignette", False)
             interpolate = user_settings.get("interpolate_fps", False)
 
             # Probe input
@@ -265,7 +270,12 @@ class EnhancementPipeline:
                 target_width=target_w,
                 target_height=target_h,
                 codec=codec,
-                quality_preset=preset
+                quality_preset=preset,
+                color_grade=color_grade,
+                clarity_boost=clarity_boost,
+                hdr_tone=hdr_tone,
+                film_grain=film_grain,
+                vignette=vignette
             )
 
             if not mux_ok or not final_out.exists():

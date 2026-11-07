@@ -95,11 +95,17 @@ class FFmpegService:
         target_width: Optional[int] = None,
         target_height: Optional[int] = None,
         codec: str = "h264",
-        quality_preset: str = "balanced"
+        quality_preset: str = "balanced",
+        color_grade: str = "none",
+        clarity_boost: bool = True,
+        hdr_tone: bool = False,
+        film_grain: str = "none",
+        vignette: bool = False
     ) -> bool:
         """
         Merge the enhanced video with the audio from the original video.
-        Optionally scales to exact target resolution if needed, and applies encoder settings.
+        Optionally scales to exact target resolution if needed, applies cinematic color grading,
+        micro-contrast CAS clarity, HDR tone curves, organic film grain, and encoder settings.
         """
         ffmpeg_bin = cls.get_ffmpeg_cmd()
         use_nvenc = cls.check_nvenc_support()
@@ -134,10 +140,46 @@ class FFmpegService:
                 preset_flag = "medium"
             encoder_opts = ["-preset", preset_flag, "-crf", crf]
 
-        # Video filter for exact final sizing if specified
-        vf_args = []
+        # Construct visual enhancement filter chain
+        filter_chain = []
         if target_width and target_height:
-            vf_args = ["-vf", f"scale={target_width}:{target_height}:flags=lanczos"]
+            filter_chain.append(f"scale={target_width}:{target_height}:flags=lanczos")
+
+        # 1. Contrast Adaptive Sharpening (Micro-texture & Edge clarity)
+        if clarity_boost:
+            filter_chain.append("cas=0.35")
+
+        # 2. Cinematic Color Grading Presets
+        if color_grade == "cinematic_teal_orange":
+            filter_chain.append("colorbalance=rs=-0.04:gs=0.02:bs=0.08:rh=0.08:gh=0.03:bh=-0.06,eq=contrast=1.06:saturation=1.12")
+        elif color_grade == "cyberpunk_vivid":
+            filter_chain.append("eq=contrast=1.12:saturation=1.35:brightness=0.01,colorbalance=rs=-0.03:bs=0.06:rh=0.06:bh=0.04")
+        elif color_grade == "golden_hour":
+            filter_chain.append("colorbalance=rh=0.10:gh=0.05:bh=-0.08:rm=0.05:gm=0.02:bm=-0.04,eq=contrast=1.04:saturation=1.10:gamma=1.02")
+        elif color_grade == "anime_radiance":
+            filter_chain.append("eq=contrast=1.08:saturation=1.28:brightness=0.02:gamma=1.04")
+        elif color_grade == "film_noir":
+            filter_chain.append("hue=s=0,eq=contrast=1.25:brightness=-0.02:gamma=0.96")
+
+        # 3. HDR Dynamic Contrast Tone
+        if hdr_tone and color_grade not in ["film_noir", "cyberpunk_vivid"]:
+            filter_chain.append("eq=contrast=1.08:gamma=1.04:saturation=1.08:brightness=0.01")
+
+        # 4. Organic 35mm Film Grain
+        if film_grain == "subtle":
+            filter_chain.append("noise=alls=6:allf=t+u")
+        elif film_grain == "medium":
+            filter_chain.append("noise=alls=12:allf=t+u")
+
+        # 5. Cinematic Optical Vignette
+        if vignette:
+            filter_chain.append("vignette=PI/5")
+
+        if filter_chain:
+            filter_chain.append("format=yuv420p")
+            vf_args = ["-vf", ",".join(filter_chain)]
+        else:
+            vf_args = []
 
         # Check if original has audio
         probe_cmd = [
