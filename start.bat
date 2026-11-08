@@ -12,7 +12,7 @@ cd /d "%~dp0"
 
 :: 1. Clean previous lingering instances
 echo [1/4] Checking ports and cleaning up old instances...
-powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3000, 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000.*LISTENING :8000.*LISTENING"') do taskkill /f /pid %%a >nul 2>&1
 
 :: 2. Check Python Environment
 echo [2/4] Verifying Python backend...
@@ -33,8 +33,8 @@ if %errorlevel% neq 0 (
 
 :: 4. Start Servers
 echo [4/4] Starting services in background terminals...
-start "PIXELFORGE Backend" "%~dp0scripts\run_backend.bat"
-start "PIXELFORGE Frontend" "%~dp0scripts\run_frontend.bat"
+start "PIXELFORGE Backend" cmd /k call "%~dp0scripts\run_backend.bat"
+start "PIXELFORGE Frontend" cmd /k call "%~dp0scripts\run_frontend.bat"
 
 echo.
 echo Waiting for servers to initialize...
@@ -50,7 +50,7 @@ if !retries! gtr 30 (
 ping 127.0.0.1 -n 2 >nul
 curl.exe -s -o nul http://localhost:3000
 if %errorlevel% neq 0 (
-    echo   ... waiting for frontend (Next.js Turbopack compiling) ...
+    echo   ... waiting for frontend: Next.js compiling ...
     goto wait_loop
 )
 
